@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <link rel="canonical" href="https://nteste05.github.io/gimel/" />
+    <link rel="icon" type="image/jpg" href="gimel-favicon.jpg" sizes="32x32">
+    <link rel="apple-touch-icon" sizes="180x180" href="gimel-favicon.jpg">
+    <link rel="manifest" href="manifest.json">
+    
+    <title>GiMel: Aplikasi Simulasi Gitar Melodi</title>
+    <meta name="description" content="Mainkan & rekam melodi gitar asli dengan GiMel! Simulasi gitar 12 fret responsif, suara realistik, dan fitur rekam HD. Download GiMel & ciptakan karya sekarang!">
+    <meta name="keywords" content="Gitar Melodi, Simulasi Gitar Real, Gitar 12 Fret, Rekam Gitar, GiMel App">
+    <meta name="robots" content="index, follow">
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nteste05.github.io/gimel">
+    <meta property="og:title" content="GiMel: Aplikasi Simulasi Gitar Melodi">
+    <meta property="og:description" content="Mainkan & rekam melodi gitar asli dengan GiMel! Simulasi gitar 12 fret responsif, suara realistik, dan fitur rekam HD. Download GiMel & ciptakan karya sekarang!">
+    <meta property="og:image" content="https://raw.githubusercontent.com/nteste05/gimel/refs/heads/main/gimel-thumb.jpg">
+    
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://nteste05.github.io/gimel">
+    <meta property="twitter:title" content="GiMel: Aplikasi Simulasi Gitar Melodi">
+    <meta property="twitter:description" content="Mainkan & rekam melodi gitar asli dengan GiMel! Simulasi gitar 12 fret responsif, suara realistik, dan fitur rekam HD. Download GiMel & ciptakan karya sekarang!">
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/nteste05/gimel/refs/heads/main/gimel-thumb.jpg">
+    
+    <style>
+        :root { --wood: #3d2516; --fret: #d1d1d1; }
+        body { 
+            margin: 0; background: #000; color: #fff; font-family: sans-serif; 
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; 
+        }
+        
+        .controls {
+            display: flex; justify-content: center; 
+            gap: 5px; border-bottom: 1px solid #333;
+            padding: 10px;
+            margin: 0;
+        }
+        select {
+            padding: 5px;
+            background: none;
+            color: white;
+        }
+        
+        .rec-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 5px;
+            margin: 0;
+        }
+        .rec-controls button {
+            font-size: 12px;
+            padding: 10px;
+            color: white;
+            background: #222;
+            box-shadow: 0 3px #111;
+        }
+        .rec-controls button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px #000;
+        }
+        #btnRecord.recording {
+            background: #ff4444;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .fretboard-container { flex: 1; display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 0;margin-bottom: 30px}
+        .fretboard { 
+            display: flex; background: var(--wood); min-width: 100vw; height: 100%; 
+            position: relative; border-top: 4px solid #111; border-bottom: 4px solid #111; 
+        }
+        
+        .fret-column { flex: 1; min-width: 60px; border-right: 2px solid var(--fret); display: flex; flex-direction: column; position: relative; }
+        .fret-column[data-fret="0"] { background: #111; border-right: 10px solid #000; min-width: 45px; }
+
+        .fret-column[data-fret="3"]::after, .fret-column[data-fret="5"]::after, 
+        .fret-column[data-fret="7"]::after, .fret-column[data-fret="9"]::after {
+            content: ""; position: absolute; top: 48%; left: 40%; width: 15px; height: 15px; 
+            background: rgba(255,255,255,0.15); border-radius: 50%;
+        }
+
+        .string-spot { flex: 1; width: 100%; display: flex; align-items: center; z-index: 10; position: relative; }
+        .string-spot:active { background: rgba(255,255,255,0.2); }
+
+        .visual-line { width: 100%; background: linear-gradient(to bottom, #eee, #888, #444); pointer-events: none; }
+        .v-e2 { height: 1px; } .v-b { height: 1px; } .v-g { height: 2px; } 
+        .v-d { height: 2px; } .v-a { height: 3px; } .v-e1 { height: 4px; }
+
+        .note-label { position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 10px; color: #aaa; pointer-events: none; }
+        
+        /* --- NAVIGATION & SIDEBAR --- */
+        .navbar {
+            
+            color: white;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            margin: 0 10px 0 0;
+        }
+
+        header h1 {
+            font-size: 12px;
+            margin:0;
+        }
+
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 2000;
+            top: 0;
+            left: 0;
+            background-color: #1a1a1a;
+            overflow-x: hidden;
+            transition: 0.3s;
+            padding-top: 10px;
+        }
+
+        .sidebar a {
+            padding: 15px 30px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            color: #ccc;
+            display: block;
+            transition: 0.2s;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar a:hover {
+            color: #ffc107;
+            background-color: #222;
+        }
+
+        .sidebar .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 36px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .overlaynav {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1500;
+        }
+        
+        .visually-hidden, header, header h1 {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <!-- Sidebar Menu -->
+    <div id="mySidebar" class="sidebar">
+        <span class="close-btn" onclick="closeNav()">&times;</span>
+        <a href="https://nteste05.github.io/gemii/" onclick="closeNav()">👽 Lainnya</a>
+    </div>
+    <!-- Overlay Background -->
+    <div id="overlaynav" class="overlaynav" onclick="closeNav()"></div>
+    <nav class="navbar">
+        <button class="menu-btn" onclick="openNav()">&#9776;</button>
+        <header><h1>GiMel: Aplikasi Simulasi Gitar Melodi</h1></header>
+        <p class="visually-hidden">GiMel: Simulasi Real Gitar Melodi 12 Fret & Rekam Audio<br><br>Apakah Anda sedang mencari cara praktis untuk mengasah kemampuan melodi tanpa harus membawa gitar fisik yang berat? Gimel hadir sebagai solusi cerdas. Sebagai aplikasi <strong>simulasi real gitar melodi</strong>, GiMel dirancang khusus untuk memberikan pengalaman bermain musik yang autentik, responsif, dan fungsional langsung dari layar <em>smartphone</em>Anda.</p>
+        <p class="visually-hidden"><strong>GiMel</strong> adalah aplikasi instrumen virtual yang memfokuskan diri pada presisi nada dan kenyamanan jari. Dengan konfigurasi 12 fret yang ideal, aplikasi ini memungkinkan pengguna untuk mengeksplorasi berbagai tangga nada (scales), hingga pembuatan riff ikonik. GiMel bukan sekadar mainan, melainkan alat bantu (tool) serius bagi musisi, pencipta lagu, maupun pemula yang ingin belajar gitar melodi secara digital.</p>
+        <p class="visually-hidden">Fitur Unggulan GiMel.<br>1. Simulator 12 Fret dengan Respons Ultra-Cepat. Masalah utama aplikasi musik adalah jeda suara (latency). GiMel menggunakan mesin audio terbaru yang memastikan setiap sentuhan pada fret menghasilkan suara seketika.<br>2. Fitur Rekam Audio Internal Berkualitas Tinggi. GiMel dilengkapi dengan fitur rekam built-in. Anda bisa langsung merekam melodi yang baru saja ditemukan, menyimpannya dalam format audio jernih, dan mendengarkannya kembali untuk evaluasi.<br>3. Kualitas Suara Realistik (Studio Sampled). Setiap nada dalam GiMel mirip asli. Hasilnya? Suara yang keluar memiliki karakteristik warm, jernih, dan memiliki dinamika seperti memetik senar asli.<br>4. Antarmuka Minimalis dan User-Friendly. GiMel memiliki desain visual yang bersih, menonjolkan fretboard yang mudah ditekan bahkan oleh jari yang besar sekalipun. Cukup buka aplikasi, dan Anda siap beraksi dalam satu detik.</p>
+        <p class="visually-hidden">Manfaat Menggunakan GiMel.<br>Latihan di Mana Saja: Manfaatkan waktu luang saat di perjalanan atau menunggu antrean untuk melatih memori otot jari Anda.<br>Media Eksperimen Melodi: Cobalah berbagai kombinasi nada tanpa harus menyetem gitar fisik. GiMel selalu dalam keadaan in-tune.<br>Tanpa Alat Tambahan: Anda tidak butuh kabel, amplifier, atau mikrofon eksternal untuk mulai merekam. Semua sudah tersedia di dalam genggaman.</p>
+        <p class="visually-hidden">Optimalkan Pengalaman Bermusik Anda.<br>Untuk hasil terbaik, gunakan headphone berkualitas saat mengoperasikan GiMel. Ini akan memberikan detail suara yang lebih mendalam dan membantu Anda dalam proses rekaman agar tidak terganggu oleh suara bising di sekitar. GiMel adalah jembatan antara imajinasi musik dan realitas digital.</p>
+        <p class="visually-hidden">GiMel adalah pilihan utama bagi siapa saja yang membutuhkan <strong>aplikasi gitar melodi 12 fret</strong> yang bisa diandalkan. Dengan fitur rekam yang mudah dan suara yang realistik, GiMel siap menemani perjalanan musikal Anda kapan saja dan di mana saja.</p>
+    </nav>
+        <select id="soundMode">
+            <option value="clean">Weird Clean</option>
+            <option value="distor">Smooth Distortion</option>
+        </select>
+        <div class="rec-controls">
+            <button id="btnRecord">R</button>
+            <button id="btnStop" disabled>B</button>
+            <button id="btnPlay" disabled>P</button>
+            <button id="btnSave" disabled>S</button>
+        </div>
+    </div>
+    
+    <div class="fretboard-container">
+        <div id="fretboard" class="fretboard"></div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+                // Node khusus untuk menangkap aliran audio (Recording Stream)
+        const dest = audioCtx.createMediaStreamDestination();
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioUrl = null;
+        
+                // UI Recording Elements
+        const btnRecord = document.getElementById('btnRecord');
+        const btnStop = document.getElementById('btnStop');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnSave = document.getElementById('btnSave');
+        
+const masterGain = audioCtx.createGain();
+masterGain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+
+const limiter = audioCtx.createDynamicsCompressor();
+limiter.threshold.setValueAtTime(-6, audioCtx.currentTime);
+limiter.knee.setValueAtTime(25, audioCtx.currentTime);
+limiter.ratio.setValueAtTime(15, audioCtx.currentTime);
+limiter.connect(audioCtx.destination);
+masterGain.connect(limiter);
+
+const activeOscillators = new Map();
+
+// Kurva distorsi yang lebih solid
+function makeDistortionCurve(amount) {
+    let k = amount, n_samples = 44100, curve = new Float32Array(n_samples);
+    for (let i = 0 ; i < n_samples; ++i ) {
+        let x = i * 2 / n_samples - 1;
+        curve[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+}
+const sharedCurve = makeDistortionCurve(150);
+
+const baseFreqs = [329.63, 246.94, 196.00, 146.83, 110.00, 82.41]; 
+const stringNames = ['e2', 'b', 'g', 'd', 'a', 'e1'];
+const fretboard = document.getElementById('fretboard');
+
+// Loop pembuatan fretboard tetap sama seperti sebelumnya...
+for (let f = 0; f <= 12; f++) {
+    const fretCol = document.createElement('div');
+    fretCol.className = 'fret-column';
+    fretCol.dataset.fret = f;
+    const label = document.createElement('div');
+    label.className = 'note-label';
+    label.innerText = f === 0 ? "NUT" : f;
+    fretCol.appendChild(label);
+
+    baseFreqs.forEach((baseFreq, sIdx) => {
+        const spot = document.createElement('div');
+        spot.className = 'string-spot';
+        const visual = document.createElement('div');
+        visual.className = `visual-line v-${stringNames[sIdx]}`;
+        spot.appendChild(visual);
+        const freq = baseFreq * Math.pow(2, f / 12);
+        const id = `s${sIdx}-f${f}`;
+        const play = (e) => { e.preventDefault(); playNote(id, freq); };
+        const stop = (e) => { e.preventDefault(); stopNote(id); };
+        spot.onmousedown = play; spot.onmouseup = stop; spot.onmouseleave = stop;
+        spot.ontouchstart = play; spot.ontouchend = stop;
+        fretCol.appendChild(spot);
+    });
+    fretboard.appendChild(fretCol);
+}
+
+function playNote(id, freq) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (activeOscillators.has(id)) stopNote(id);
+
+    const osc = audioCtx.createOscillator();
+    const noteGain = audioCtx.createGain();
+    const soundMode = document.getElementById('soundMode');
+    const mode = soundMode.value;
+    
+    // Gunakan sine/triangle untuk fundamental yang bersih agar tidak fals saat distorsi
+    osc.type = mode === 'distor' ? 'sawtooth' : 'triangle'; 
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+    const volume = mode === 'distor' ? 0.5 : 1; // Volume per nada
+    noteGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    noteGain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
+
+    if (mode === 'distor') {
+        // PERBAIKAN: Buat distortion node UNTUK SETIAP NADA
+        // Ini mencegah "Intermodulation Distortion" yang bikin suara fals
+        const individualDist = audioCtx.createWaveShaper();
+        individualDist.curve = sharedCurve;
+        individualDist.oversample = '4x';
+        
+        // Tambahkan filter pre-distortion agar suara tidak terlalu 'cempreng'
+        const preFilter = audioCtx.createBiquadFilter();
+        preFilter.type = "lowpass";
+        preFilter.frequency.setValueAtTime(3500, audioCtx.currentTime);
+
+        osc.connect(preFilter);
+        preFilter.connect(individualDist);
+        individualDist.connect(noteGain);
+    } else {
+        osc.connect(noteGain);
+    }
+    
+    noteGain.connect(masterGain);
+    noteGain.connect(dest); // Mengirim audio ke MediaRecorder
+    osc.start();
+    activeOscillators.set(id, { osc, noteGain });
+}
+
+function stopNote(id) {
+    if (activeOscillators.has(id)) {
+        const { osc, noteGain } = activeOscillators.get(id);
+        const rel = 0.5; // Release lebih cepat agar tidak tumpang tindih terlalu lama
+        noteGain.gain.cancelScheduledValues(audioCtx.currentTime);
+        noteGain.gain.setValueAtTime(noteGain.gain.value, audioCtx.currentTime);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + rel);
+        setTimeout(() => { 
+            try { osc.stop(); osc.disconnect(); noteGain.disconnect(); } catch(e) {} 
+        }, rel * 1000);
+        activeOscillators.delete(id);
+    }
+}
+
+// --- LOGIKA REKAMAN ---
+        btnRecord.onclick = () => {
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(dest.stream);
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                audioUrl = URL.createObjectURL(audioBlob);
+                btnPlay.disabled = false;
+                btnSave.disabled = false;
+            };
+
+            mediaRecorder.start();
+            btnRecord.disabled = true;
+            btnRecord.classList.add('recording');
+            btnStop.disabled = false;
+        };
+
+        btnStop.onclick = () => {
+            mediaRecorder.stop();
+            btnRecord.disabled = false;
+            btnRecord.classList.remove('recording');
+            btnStop.disabled = true;
+        };
+
+        btnPlay.onclick = () => {
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                audio.play();
+            }
+        };
+
+        btnSave.onclick = () => {
+            if (audioUrl) {
+                const link = document.createElement('a');
+                link.href = audioUrl;
+                link.download = 'my-chord-track.webm';
+                link.click();
+            }
+        };
+        
+
+const sidebar = document.getElementById("mySidebar");
+    const overlaynav = document.getElementById("overlaynav");
+        
+        function openNav() {
+            sidebar.style.width = "280px";
+            overlaynav.style.display = "block";
+            // Mencegah scroll pada body saat menu buka
+            document.body.style.overflow = "hidden";
+        }
+        
+        function closeNav() {
+            sidebar.style.width = "0";
+            overlaynav.style.display = "none";
+            // Mengembalikan scroll body
+            document.body.style.overflow = "auto";
+        }
+
+    </script>
+</body>
+</html>

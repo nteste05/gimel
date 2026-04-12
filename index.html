@@ -366,6 +366,11 @@ function stopNote(id) {
             btnRecord.disabled = false;
             btnRecord.classList.remove('recording');
             btnStop.disabled = true;
+
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                audio.stop();
+            }
         };
 
         btnPlay.onclick = () => {

@@ -366,8 +366,6 @@ function stopNote(id) {
             mediaRecorder.stop();
             btnRecord.disabled = false;
             btnRecord.classList.remove('recording');
-            btnStop.disabled = true;
-
             if (rAudio) {
                 rAudio.pause();
                 rAudio.currentTime = 0;
@@ -376,6 +374,10 @@ function stopNote(id) {
 
         btnPlay.onclick = () => {
             if (audioUrl) {
+                if (rAudio) {
+                rAudio.pause();
+                rAudio.currentTime = 0;
+                }
                 rAudio = new Audio(audioUrl);
                 rAudio.play();
             }

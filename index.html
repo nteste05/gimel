@@ -360,23 +360,24 @@ function stopNote(id) {
             btnRecord.classList.add('recording');
             btnStop.disabled = false;
         };
-
+        
+        let rAudio = null;
         btnStop.onclick = () => {
             mediaRecorder.stop();
             btnRecord.disabled = false;
             btnRecord.classList.remove('recording');
             btnStop.disabled = true;
 
-            if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                audio.stop();
+            if (rAudio) {
+                rAudio.pause();
+                rAudio.currentTime = 0;
             }
         };
 
         btnPlay.onclick = () => {
             if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                audio.play();
+                rAudio = new Audio(audioUrl);
+                rAudio.play();
             }
         };
 
